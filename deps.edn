@@ -1,6 +1,8 @@
 {:paths ["src" "resources"]
  :deps {rewrite-clj {:mvn/version "0.6.1"}
-        com.cognitect/transit-clj {:mvn/version "0.8.313"}}
+        com.cognitect/transit-clj {:mvn/version "0.8.313"}
+        funcool/octet {:mvn/version "1.1.2"}
+        org.jasani/clj-lmdbj {:mvn/version "0.1.0"}}
  :aliases {:native-image
            {:jvm-opts [#_"-Dclojure.compiler.direct-linking=true"]
             :main-opts ["-m clj.native-image clj-kondo.main"

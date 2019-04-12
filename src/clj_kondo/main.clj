@@ -9,7 +9,9 @@
    [clojure.java.io :as io]
    [clojure.string :as str
     :refer [starts-with?
-            ends-with?]])
+            ends-with?]]
+   [clj-lmdbj.core :as lmdb]
+   [clj-lmdbj.macros :refer [with-tx]])
   (:import [java.util.jar JarFile JarFile$JarFileEntry]))
 
 (def ^:private version (str/trim
@@ -243,7 +245,14 @@ Options:
 
 (defn main
   [& options]
-  (let [start-time (System/currentTimeMillis)
+  (let [env (lmdb/create-env! "/tmp")
+        db (lmdb/create-db env "mydb")]
+    (lmdb/put! db "foo" (lmdb/s->bb! "bar"))
+    (with-tx [tx (lmdb/read-tx env)]
+      (println "get" (str (lmdb/get db tx "foo")))))
+  1
+  
+  #_(let [start-time (System/currentTimeMillis)
         {:keys [:opts
                 :files
                 :default-lang
