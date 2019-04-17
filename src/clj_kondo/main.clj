@@ -278,6 +278,7 @@ Options:
 
 (defn main
   [& options]
+  #_(prn (macroexpand '(-> x inc inc)))
   (let [start-time (System/currentTimeMillis)
         {:keys [:opts
                 :files
@@ -329,5 +330,5 @@ Options:
 ;;;; Scratch
 
 (comment
-
+  (with-in-str "(foo 1)" (main "--lint" "-"))
   )

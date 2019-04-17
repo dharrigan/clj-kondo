@@ -3,28 +3,37 @@
   (:require
    [clj-kondo.impl.utils :refer [some-call filter-children]]
    [clojure.walk :refer [prewalk]]
+   [clj-kondo.impl.utils :refer [parse-string]]
    [rewrite-clj.node.protocols :as node :refer [tag]]
    [rewrite-clj.node.seq :refer [vector-node list-node]]
    [rewrite-clj.node.token :refer [token-node]]))
 
 ;;;; macro expand
 
-(defn expand-> [{:keys [:children] :as expr}]
-  (let [children (rest children)]
+(defn expand-> [expr]
+  (let [children (rest expr)]
     (loop [[child1 child2 & children :as all-children] children]
       (if child2
-        (if (= :list (node/tag child2))
+        (if (list? child2)
           (recur
            (let [res (into
                       [(with-meta
-                         (list-node (reduce into
+                         (list (reduce into [[(first (rest child2))]
+                                             [child1] (rest (rest child2))]))
+                         #_(list-node (reduce into
                                             [[(first (:children child2))]
                                              [child1] (rest (:children child2))]))
                          (meta child2))] children)]
              res))
-          (recur (into [(with-meta (list-node [child2 child1])
+          (recur (into [(with-meta (list child2 child1) #_(list-node [child2 child1])
                           (meta child2))] children)))
         child1))))
+
+#_(comment
+  (macroexpand '(-> x inc inc inc))
+  (meta (expand-> (parse-string "(-> x inc inc inc)")))
+  (meta (macroexpand (parse-string "(-> x inc inc inc)")))
+  )
 
 (defn find-fn-args [children]
   (filter-children #(and (= :token (tag %))
@@ -44,7 +53,8 @@
       m)))
 
 (defn expand-all [expr]
-  (clojure.walk/prewalk
+  expr
+  #_(clojure.walk/prewalk
    #(if (:children %)
       (assoc % :children
              (map (fn [n]
@@ -60,4 +70,5 @@
 ;;;; Scratch
 
 (comment
+  (parse-string "{:a 1 :a 2}") ;; this is a reason to stay with rewrite-clj for now
   )

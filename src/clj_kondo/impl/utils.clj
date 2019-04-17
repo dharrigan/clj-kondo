@@ -4,56 +4,39 @@
    [clojure.walk :refer [prewalk]]
    [rewrite-clj.node.protocols :as node]
    [rewrite-clj.node.whitespace :refer [whitespace?]]
-   [rewrite-clj.parser :as p]
+   [clj-kondo.impl.parser :as p]
    [clojure.string :as str]))
 
-(defn tag [maybe-expr]
-  (when maybe-expr
-    (node/tag maybe-expr)))
-
-(defn uneval? [node]
-  (= :uneval (tag node)))
-
 (defn comment? [node]
-  (= :comment (tag node)))
+  (= 'comment (first node)))
 
 (defmacro some-call
   "Determines if expr is a call to some symbol. Returns symbol if so."
   [expr & syms]
   (let [syms (set syms)]
-    `(and (= :list (tag ~expr))
-          ((quote ~syms) (:value (first (:children ~expr)))))))
+    `(and (list?  ~expr)
+          ((quote ~syms) (first ~expr)))))
 
 (defn remove-noise
-  ([expr] (remove-noise expr nil))
-  ([expr config]
-   (clojure.walk/prewalk
-    #(if-let [children (:children %)]
-       (assoc % :children
-              (remove (fn [n]
-                        (or (whitespace? n)
-                            (uneval? n)
-                            (comment? n)
-                            (when (-> config :analysis :comments :disabled)
-                              (some-call n comment core/comment)))) children))
-       %) expr)))
+  [expr] expr)
 
 (defn node->line [filename node level type message]
   (let [m (meta node)]
+    (prn "meta" m)
     {:type type
      :message message
      :level level
-     :row (:row m)
-     :col (:col m)
+     :row (:line m)
+     :col (:column m)
      :filename filename}))
 
-(defn parse-string [s]
-  (remove-noise (p/parse-string s)))
-
 (defn parse-string-all
-  ([s] (parse-string-all s nil))
+  ([s] (p/parse-string s))
   ([s config]
-   (remove-noise (p/parse-string-all s) config)))
+   (p/parse-string s)))
+
+(defn parse-string [s]
+  (first (parse-string-all s)))
 
 (defn filter-children
   "Recursively filters children by pred"
@@ -64,3 +47,10 @@
                (filter-children pred cchildren)
                []))
           children))
+
+;;;; Scratch
+
+(comment
+  (some-call (parse-string "(comment 1 2 3)") comment)
+
+  )

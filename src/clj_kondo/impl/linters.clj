@@ -4,7 +4,7 @@
    [clj-kondo.impl.macroexpand :refer [expand-all]]
    [clj-kondo.impl.utils :refer [node->line parse-string
                                  parse-string-all some-call
-                                 tag]]
+                                 ]]
    [clj-kondo.impl.vars :refer [analyze-arities]]
    [clojure.string :as str]))
 
@@ -13,18 +13,28 @@
 ;;;; inline def
 
 (defn inline-def* [expr in-def?]
+  (println "expr" expr in-def?)
   (let [current-def? (some-call expr def defn defn- deftest defmacro)
-        new-in-def? (and (not (contains? '#{:syntax-quote :quote}
-                                         (tag expr)))
+        new-in-def? (and (not (or (some-call expr quote)
+                                  (= \` (first (:source (meta expr))))))
                          (or in-def? current-def?))]
+    (prn current-def? new-in-def?)
     (if (and in-def? current-def?)
       [expr]
-      (when (:children expr)
-        (mapcat #(inline-def* % new-in-def?) (:children expr))))))
+      (when-let [r (and (coll? expr) (next expr))]
+        (mapcat #(inline-def* % new-in-def?) r)))))
 
 (defn inline-def [filename parsed-expressions]
+  (println (map meta parsed-expressions))
   (map #(node->line filename % :warning :inline-def "inline def")
-       (inline-def* parsed-expressions false)))
+       (mapcat #(inline-def* % false) parsed-expressions)))
+
+
+(comment
+  
+  (inline-def "<stdin>" (parse-string-all "(def x (def y (def z 1))) (def x (def y (def z 1)))"))
+  (next (parse-string-all "(def x (def y 1))"))
+  )
 
 ;;;; redundant let
 
@@ -48,7 +58,7 @@
 
 (defn redundant-do* [{:keys [:children] :as expr}
                     parent-do?]
-  (let [implicit-do? (some-call expr fn defn defn-
+  #_(let [implicit-do? (some-call expr fn defn defn-
                             let loop binding with-open
                             doseq try)
         current-do? (some-call expr do)]
@@ -70,11 +80,11 @@
   (try
     (let [;; workaround for https://github.com/xsc/rewrite-clj/issues/75
           input (-> input
-                    (str/replace "##Inf" "::Inf")
-                    (str/replace "##-Inf" "::-Inf")
-                    (str/replace "##NaN" "::NaN")
+                    ;;(str/replace "##Inf" "::Inf")
+                    ;;(str/replace "##-Inf" "::-Inf")
+                    ;;(str/replace "##NaN" "::NaN")
                     ;; workaround for https://github.com/borkdude/clj-kondo/issues/11
-                    (str/replace #_"#:a{#::a {:a b}}"
+                    #_(str/replace #_"#:a{#::a {:a b}}"
                                  #"#(::?)(.*?)\{" (fn [[_ colons name]]
                                                     (str "#_" colons name "{"))))
           parsed-expressions (parse-string-all input config)

@@ -12,6 +12,7 @@
                         "-H:IncludeResources=clj_kondo/impl/cache/built_in/.*/.*transit.json$"
                         "-H:Log=registerResource:"
                         "--verbose"
+                        "--report-unsupported-elements-at-runtime"
                         "-J-Xmx3g"]
             :extra-deps
             {clj.native-image
