@@ -234,7 +234,7 @@
                   called-fn (utils/resolve-call idacs call call-lang
                                                 resolved-ns fn-name unresolved? refer-alls)
                   #_#__(when (not call?)
-                      (clojure.pprint/pprint (dissoc call :config)))
+                        (clojure.pprint/pprint (dissoc call :config)))
                   name-meta (meta fn-name)
                   name-row (:row name-meta)
                   name-col (:col name-meta)
@@ -508,11 +508,11 @@
       (when-not (identical? :off (-> ctx :config :linters :used-underscored-binding :level))
         (let [bindings (:bindings ns)
               used-bindings (:used-bindings ns)
-              diff (set/difference bindings used-bindings)
-              defaults (:destructuring-defaults ns)]
+              diff (set/difference bindings used-bindings)]
           (doseq [binding diff]
             (let [nm (:name binding)]
-              (when (str/starts-with? (str nm) "_")
+              (when (and (str/starts-with? (str nm) "_")
+                         (not= '_ nm))
                 (findings/reg-finding!
                  ctx
                  {:type :used-underscored-binding
@@ -521,19 +521,7 @@
                   :row (:row binding)
                   :col (:col binding)
                   :end-row (:end-row binding)
-                  :end-col (:end-col binding)}))))
-          (doseq [default defaults
-                  :let [binding (:binding default)]
-                  :when (contains? (:used-bindings ns) binding)]
-            (findings/reg-finding!
-             ctx
-             {:type :used-underscored-binding
-              :filename (:filename binding)
-              :message (str "used underscored default binding " (:name binding))
-              :row (:row default)
-              :col (:col default)
-              :end-row (:end-row default)
-              :end-col (:end-col default)})))))))
+                  :end-col (:end-col binding)})))))))))
 
 (defn lint-unused-private-vars!
   [ctx]
