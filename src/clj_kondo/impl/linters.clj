@@ -504,6 +504,35 @@
               :row (:row default)
               :col (:col default)
               :end-row (:end-row default)
+              :end-col (:end-col default)}))))
+      (when-not (identical? :off (-> ctx :config :linters :used-underscored-binding :level))
+        (let [bindings (:bindings ns)
+              used-bindings (:used-bindings ns)
+              diff (set/difference bindings used-bindings)
+              defaults (:destructuring-defaults ns)]
+          (doseq [binding diff]
+            (let [nm (:name binding)]
+              (when (str/starts-with? (str nm) "_")
+                (findings/reg-finding!
+                 ctx
+                 {:type :used-underscored-binding
+                  :filename (:filename binding)
+                  :message (str "used underscored binding " nm)
+                  :row (:row binding)
+                  :col (:col binding)
+                  :end-row (:end-row binding)
+                  :end-col (:end-col binding)}))))
+          (doseq [default defaults
+                  :let [binding (:binding default)]
+                  :when (contains? (:used-bindings ns) binding)]
+            (findings/reg-finding!
+             ctx
+             {:type :used-underscored-binding
+              :filename (:filename binding)
+              :message (str "used underscored default binding " (:name binding))
+              :row (:row default)
+              :col (:col default)
+              :end-row (:end-row default)
               :end-col (:end-col default)})))))))
 
 (defn lint-unused-private-vars!
@@ -613,4 +642,5 @@
 ;;;; scratch
 
 (comment
-  )
+
+ ,)

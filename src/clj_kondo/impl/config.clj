@@ -34,6 +34,7 @@
                                ;;:exclude-destructured-keys-in-fn-args false
                                ;;:exclude-destructured-as false
                                ,}
+              :used-underscored-binding {:level :warning}
               :unsorted-required-namespaces {:level :off}
               :unused-namespace {:level :warning
                                  ;; don't warn about these namespaces:
